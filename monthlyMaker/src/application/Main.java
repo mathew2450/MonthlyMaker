@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.poi.ss.usermodel.Sheet;
@@ -50,17 +49,18 @@ public class Main extends Application {
 				        	
 				        }
 				        else{
-					 FileInputStream inputStream;
+					 
+				     FileInputStream inputStream;
 					 FileOutputStream outputStream;
-
+					 File outputFile = new File(selectedFile.getPath().substring(0, selectedFile.getPath().lastIndexOf("/")) + "/Final_Books" + LocalDate.now() + ".xlsx");
+					
+					
+	         
+					Workbook wb;
+					Workbook wbo;
 						try {
 								inputStream = new FileInputStream(selectedFile);
-								File outputFile = new File(selectedFile.getPath().substring(0, selectedFile.getPath().lastIndexOf("/")) + "/Final_Books" + LocalDate.now() + ".xlsx");
 								outputStream = new FileOutputStream(outputFile);
-								
-				         
-				        Workbook wb;
-				        Workbook wbo;
 
 							wb = new XSSFWorkbook(inputStream);
 							wbo = new XSSFWorkbook();
