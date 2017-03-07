@@ -5,8 +5,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.stream.Stream;
 
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Cell;
@@ -30,193 +34,219 @@ import javafx.event.EventHandler;
 public class Main extends Application {
 	static File selectedFile;
 	WeekRange[] wR = new WeekRange[53];
+	Workbook wb;
+	Workbook wbo;
+	File outputFile;
+	int fileNum = 0;
+	FileOutputStream outputStream;
 	@Override
 	public void start(Stage primaryStage) {
 		try {
 			Button file = new Button("Choose File");
 			file.setOnAction(new EventHandler<ActionEvent>(){
-
+				
 				@SuppressWarnings("deprecation")
 				@Override
 				public void handle(ActionEvent arg0) {
-					
+					wbo = new XSSFWorkbook();
 					FileChooser fileChooser = new FileChooser();
-					fileChooser.setTitle("Open Resource File");
+					fileChooser.setTitle("Choose File From Flolder");
 					fileChooser.getExtensionFilters().addAll(
 			         new ExtensionFilter("Excell Files", "*.xlsx"));
 					 selectedFile = fileChooser.showOpenDialog(primaryStage);
 				        if(selectedFile == null){
 				        	
 				        }
-				        else{
-					 
-				     FileInputStream inputStream;
-					 FileOutputStream outputStream;
-					 File outputFile = new File(selectedFile.getPath().substring(0, selectedFile.getPath().lastIndexOf("/")) + "/Final_Books" + LocalDate.now() + ".xlsx");
-					
-					
-	         
-					Workbook wb;
-					Workbook wbo;
-						try {
-								inputStream = new FileInputStream(selectedFile);
+				        else{ 
+				        	FileChooser fileSaver = new FileChooser();
+							fileSaver.setTitle("Create Save File");
+							fileSaver.getExtensionFilters().addAll(
+					         new ExtensionFilter("Excell Files", "*.xlsx"));
+							 outputFile = fileChooser.showSaveDialog(primaryStage);
+				        	//outputFile = new File("/home/camen/Desktop" + "/Final_Books" + LocalDate.now() + ".xlsx");
+				        	
+				        	try {
 								outputStream = new FileOutputStream(outputFile);
-
-							wb = new XSSFWorkbook(inputStream);
-							wbo = new XSSFWorkbook();
-							CreationHelper createHelper = wbo.getCreationHelper();
-							Sheet sheetOut = wbo.createSheet(selectedFile.getName());
-							Row rowOut = sheetOut.createRow(0);
-							Cell cellOut;
-							cellOut = rowOut.createCell(0);
-							cellOut.setCellValue(createHelper.createRichTextString("Week"));
-							cellOut = rowOut.createCell(1);
-							cellOut.setCellValue(createHelper.createRichTextString("Behavior/Decel"));
-							cellOut = rowOut.createCell(2);
-							cellOut.setCellValue(createHelper.createRichTextString("Data Input Total"));
-							cellOut = rowOut.createCell(3);
-							cellOut.setCellValue(createHelper.createRichTextString("Measurment Type"));
-							cellOut = rowOut.createCell(4);
-							cellOut.setCellValue(createHelper.createRichTextString("Measurment Unit"));
-							int rowCount = 1;
-				        for (int k = 0; k < wb.getNumberOfSheets(); k++) {
-							Sheet sheet = wb.getSheetAt(k);
-							int weekCount = 0;
-							double weekTotal = 0;
-							boolean replace = false;
-							String decelName = null;
-							String replaceName = null;
-							String measType = null;
-							String measUnit = null;
-							String replacedName = null;
-							WeekRange wr = null; 
-							int weekNum = -1; 
-							int lastWeek = -1;
-							int year = 0;
-							
-							int rows = sheet.getPhysicalNumberOfRows();
-							//System.out.println("Sheet " + k + " \"" + wb.getSheetName(k) + "\" has " + rows
-									//+ " row(s).");
-							for (int r = 0; r < rows; r++) {
-								boolean newWeek = false;
-								Row row = sheet.getRow(r);
-								if (row == null) {
-									continue;
-								}
-
-								int cells = row.getPhysicalNumberOfCells();
-								//System.out.println("\nROW " + row.getRowNum() + " has " + cells
-										//+ " cell(s).");
-								for (int c = 0; c < cells; c++) {
-									Cell cell = row.getCell(c);
-									if(cell == null)
-									{
-										//c++;
-										cells++;
-									}
-									else{
-									 switch (cell.getCellTypeEnum()) {
-						                case STRING:
-						                	if(r == 0 && cell.getRichStringCellValue().getString().contains("Replacement"))
-						                		replace = true;
-						                	if(r == 0 && replace == true && c == 1)
-						                		replaceName = cell.getRichStringCellValue().getString();
-						                	else if(r == 0 && replace == false && c == 1)
-						                		decelName = cell.getRichStringCellValue().getString();
-						                	else if(r == 0 && replace == true && c == 2)
-						                		replacedName = cell.getRichStringCellValue().getString();
-						                	if(r == 1 && c == 0)
-						                		measType = cell.getRichStringCellValue().getString();
-						                	if(r == 1 && c == 1)
-						                		measUnit = cell.getRichStringCellValue().getString();
-						                    //System.out.println(cell.getRichStringCellValue().getString());
-						                    break;
-						                case NUMERIC:
-						                    if (DateUtil.isCellDateFormatted(cell)) {
-						                    	if(year == 0){
-						                    		year = cell.getDateCellValue().getYear();
-						                    		findWeeks(year);
-						                    	}
-						                    	else if(year != cell.getDateCellValue().getYear()){
-						                    		year = cell.getDateCellValue().getYear();
-						                    		findWeeks(year);
-						                    	}
-						                    	lastWeek = weekNum;
-						                    	for(int i = 0; i < 51; i++){
-						                    		if(cell.getDateCellValue().after(wR[i].startWeek) && cell.getDateCellValue().before(wR[i].endWeek) || cell.getDateCellValue().equals(wR[i].startWeek) || cell.getDateCellValue().equals(wR[i].endWeek)){
-						                    			weekNum = i;
-						                    		}
-						                    	}
-						                    	
-						                    		
-						                        //System.out.println(cell.getDateCellValue());
-						                     } else {
-						                        //System.out.println(cell.getNumericCellValue());
-						                    	 if(lastWeek != weekNum && lastWeek != -1)
-						                    		 r--;
-						                    	 else
-						                    		 weekTotal += cell.getNumericCellValue();
-						                    }
-						                    break;
-						                case BOOLEAN:
-						                    //System.out.println(cell.getBooleanCellValue());
-						                    break;
-						                case FORMULA:
-						                    //System.out.println(cell.getCellFormula());
-						                    break;
-						                case BLANK:
-						                    //System.out.println();
-						                    break;
-						                default:
-						                    //System.out.println();
-						            }
-									
-									//System.out.println("CELL col=" + cell.getColumnIndex() + " VALUE="
-											//+ value);
-									}
-								}//System.out.println(lastWeek + " " + weekNum + " " + weekTotal);
-								String[] months = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"};
-								if(lastWeek != weekNum && lastWeek != -1)
-									{
-
-										//weekCount ++;
-										rowOut	= sheetOut.createRow(rowCount);
-										Cell cell = rowOut.createCell(0);
-										cell.setCellValue(createHelper.createRichTextString(months[wR[weekNum].month-1] + " week " + wR[weekNum].monthWeek + ", " + (year+1900)));
-										cell = rowOut.createCell(1);
-										if(replace == true)
-											cell.setCellValue(createHelper.createRichTextString(replaceName));
-										else
-											cell.setCellValue(createHelper.createRichTextString(decelName));
-										cell = rowOut.createCell(2);
-										cell.setCellValue(weekTotal);
-										cell = rowOut.createCell(3);
-										cell.setCellValue(createHelper.createRichTextString(measType));
-										cell = rowOut.createCell(4);
-										cell.setCellValue(createHelper.createRichTextString(measUnit));
-										System.out.println(months[wR[weekNum].month-1] + " week " + (wR[weekNum].monthWeek) + ", " + (year+1900) + ": " + weekTotal + " Measurment Type: " + measType + " Measument Unit: " + measUnit);
-										weekTotal = 0;
-										lastWeek = weekNum;
-										//newWeek = false;
-										rowCount++;
-									}
-								
+							} catch (FileNotFoundException e2) {
+								// TODO Auto-generated catch block
+								e2.printStackTrace();
 							}
-							if(replace == true)
-									System.out.println(replaceName + " for " + replacedName);
-								else
-									System.out.println(decelName);
-						}
-				        wbo.write(outputStream);
-				        wbo.close();
-				        wb.close();
-				        outputStream.close();
-				        inputStream.close();
-							} catch (FileNotFoundException e) {
-								e.printStackTrace();
-							} catch (IOException e) {
-								e.printStackTrace();
+				        	
+				        	try(
+				        			
+				        			Stream<Path> paths = Files.walk(Paths.get(selectedFile.getPath().substring(0, selectedFile.getPath().lastIndexOf("/"))))) {
+				        	    paths.forEach(filePath -> {
+				        	        if (Files.isRegularFile(filePath) && !filePath.toString().equals(selectedFile)) {
+				        	            //System.out.println(filePath);
+				        	            fileNum++;
+				   				     FileInputStream inputStream;
+									 
+										try {
+												inputStream = new FileInputStream(filePath.toString());
+												
+												
+											wb = new XSSFWorkbook(inputStream);
+											
+											CreationHelper createHelper = wbo.getCreationHelper();
+											Sheet sheetOut = wbo.createSheet(filePath.getFileName().toString());
+											Row rowOut = sheetOut.createRow(0);
+											Cell cellOut;
+											cellOut = rowOut.createCell(0);
+											cellOut.setCellValue(createHelper.createRichTextString("Week"));
+											cellOut = rowOut.createCell(1);
+											cellOut.setCellValue(createHelper.createRichTextString("Behavior/Decel"));
+											cellOut = rowOut.createCell(2);
+											cellOut.setCellValue(createHelper.createRichTextString("Data Input Total"));
+											cellOut = rowOut.createCell(3);
+											cellOut.setCellValue(createHelper.createRichTextString("Measurment Type"));
+											cellOut = rowOut.createCell(4);
+											cellOut.setCellValue(createHelper.createRichTextString("Measurment Unit"));
+											int rowCount = 1;
+								        for (int k = 0; k < wb.getNumberOfSheets(); k++) {
+											Sheet sheet = wb.getSheetAt(k);
+											double weekTotal = 0;
+											boolean replace = false;
+											String decelName = null;
+											String replaceName = null;
+											String measType = null;
+											String measUnit = null;
+											String replacedName = null;
+											int weekNum = -1; 
+											int lastWeek = -1;
+											int year = 0;				
+											int rows = sheet.getPhysicalNumberOfRows();
+											//System.out.println("Sheet " + k + " \"" + wb.getSheetName(k) + "\" has " + rows
+													//+ " row(s).");
+											for (int r = 0; r < rows; r++) {
+
+												Row row = sheet.getRow(r);
+												if (row == null) {
+													continue;
+												}
+
+												int cells = row.getPhysicalNumberOfCells();
+												//System.out.println("\nROW " + row.getRowNum() + " has " + cells
+														//+ " cell(s).");
+												for (int c = 0; c < cells; c++) {
+													Cell cell = row.getCell(c);
+													if(cell == null)
+													{
+														//c++;
+														cells++;
+													}
+													else{
+													 switch (cell.getCellTypeEnum()) {
+										                case STRING:
+										                	if(r == 0 && cell.getRichStringCellValue().getString().contains("Replacement"))
+										                		replace = true;
+										                	if(r == 0 && replace == true && c == 1)
+										                		replaceName = cell.getRichStringCellValue().getString();
+										                	else if(r == 0 && replace == false && c == 1)
+										                		decelName = cell.getRichStringCellValue().getString();
+										                	else if(r == 0 && replace == true && c == 2)
+										                		replacedName = cell.getRichStringCellValue().getString();
+										                	if(r == 1 && c == 0)
+										                		measType = cell.getRichStringCellValue().getString();
+										                	if(r == 1 && c == 1)
+										                		measUnit = cell.getRichStringCellValue().getString();
+										                    //System.out.println(cell.getRichStringCellValue().getString());
+										                    break;
+										                case NUMERIC:
+										                    if (DateUtil.isCellDateFormatted(cell)) {
+										                    	if(year == 0){
+										                    		year = cell.getDateCellValue().getYear();
+										                    		findWeeks(year);
+										                    	}
+										                    	else if(year != cell.getDateCellValue().getYear()){
+										                    		year = cell.getDateCellValue().getYear();
+										                    		findWeeks(year);
+										                    	}
+										                    	lastWeek = weekNum;
+										                    	for(int i = 0; i < 51; i++){
+										                    		if(cell.getDateCellValue().after(wR[i].startWeek) && cell.getDateCellValue().before(wR[i].endWeek) || cell.getDateCellValue().equals(wR[i].startWeek) || cell.getDateCellValue().equals(wR[i].endWeek)){
+										                    			weekNum = i;
+										                    		}
+										                    	}
+										                    	
+										                    		
+										                        //System.out.println(cell.getDateCellValue());
+										                     } else {
+										                        //System.out.println(cell.getNumericCellValue());
+										                    	 if(lastWeek != weekNum && lastWeek != -1)
+										                    		 r--;
+										                    	 else
+										                    		 weekTotal += cell.getNumericCellValue();
+										                    }
+										                    break;
+										                case BOOLEAN:
+										                    //System.out.println(cell.getBooleanCellValue());
+										                    break;
+										                case FORMULA:
+										                    //System.out.println(cell.getCellFormula());
+										                    break;
+										                case BLANK:
+										                    //System.out.println();
+										                    break;
+										                default:
+										                    //System.out.println();
+										            }
+													
+													//System.out.println("CELL col=" + cell.getColumnIndex() + " VALUE="
+															//+ value);
+													}
+												}//System.out.println(lastWeek + " " + weekNum + " " + weekTotal);
+												String[] months = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"};
+												if(lastWeek != weekNum && lastWeek != -1)
+													{
+
+														//weekCount ++;
+														rowOut	= sheetOut.createRow(rowCount);
+														Cell cell = rowOut.createCell(0);
+														cell.setCellValue(createHelper.createRichTextString(months[wR[weekNum].month-1] + " week " + wR[weekNum].monthWeek + ", " + (year+1900)));
+														cell = rowOut.createCell(1);
+														if(replace == true)
+															cell.setCellValue(createHelper.createRichTextString(replaceName));
+														else
+															cell.setCellValue(createHelper.createRichTextString(decelName));
+														cell = rowOut.createCell(2);
+														cell.setCellValue(weekTotal);
+														cell = rowOut.createCell(3);
+														cell.setCellValue(createHelper.createRichTextString(measType));
+														cell = rowOut.createCell(4);
+														cell.setCellValue(createHelper.createRichTextString(measUnit));
+														//System.out.println(months[wR[weekNum].month-1] + " week " + (wR[weekNum].monthWeek) + ", " + (year+1900) + ": " + weekTotal + " Measurment Type: " + measType + " Measument Unit: " + measUnit);
+														weekTotal = 0;
+														lastWeek = weekNum;
+														//newWeek = false;
+														rowCount++;
+													}
+												
+											}
+											//if(replace == true)
+													//System.out.println(replaceName + " for " + replacedName);
+												//else
+													//System.out.println(decelName);
+										}
+								        
+								        
+								        wb.close();
+								        
+								        inputStream.close();
+											} catch (FileNotFoundException e) {
+												e.printStackTrace();
+											} catch (IOException e) {
+												e.printStackTrace();
+											}
+				        	        }
+				        	    });
+				        	    wbo.write(outputStream);
+				        	    wbo.close();
+								outputStream.close();
+				        	} catch (IOException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
 							}
+
 				}
 				}
 			});
